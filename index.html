@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Sistema de Carros</title>
+	<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+	<div id="login-screen" class="login-container">
+		<div class="login-card">
+			<h1>Login</h1>
+			<form id="login-form">
+				<div class="row">
+					<label>Usuário</label>
+					<input type="text" id="username" placeholder="Digite o usuário" required />
+				</div>
+				<div class="row">
+					<label>Senha</label>
+					<input type="password" id="password" placeholder="Digite a senha" required />
+				</div>
+				<div class="actions">
+					<button type="submit">Entrar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<main id="main-content" class="container" style="display: none;">
+		<h1>Sistema Carros e Quilometragens</h1>
+		<div class="actions">
+			<button type="button" id="logout-btn">Sair</button>
+		</div>
+
+		<form id="carro" class="card">
+			<div class="row">
+				<label>Modelo</label>
+				<input type="text" id="modelo" placeholder="Ex: Volkswagen Gol" required />
+			</div>
+			<div class="row">
+				<label>Placa (obrigatório)</label>
+				<input type="text" id="placa" placeholder="AAA0A00" required />
+			</div>
+			<div class="row">
+				<label>Quilometragem (km)</label>
+				<input type="number" id="km" placeholder="12345" required min="0" />
+			</div>
+			<div class="row">
+				<label>Secretaria</label>
+				<select id="secretaria" required>
+					<option value="">Selecione uma secretaria</option>
+					<option value="Educação">Educação</option>
+					<option value="Saúde">Saúde</option>
+					<option value="Transportes">Transportes</option>
+					<option value="Administração">Administração</option>
+					<option value="Outros">Outros</option>
+				</select>
+			</div>
+			<div class="row">
+				<label>Mês</label>
+				<select id="mes" required>
+					<option value="">Selecione o mês</option>
+					<option value="01">Janeiro</option>
+					<option value="02">Fevereiro</option>
+					<option value="03">Março</option>
+					<option value="04">Abril</option>
+					<option value="05">Maio</option>
+					<option value="06">Junho</option>
+					<option value="07">Julho</option>
+					<option value="08">Agosto</option>
+					<option value="09">Setembro</option>
+					<option value="10">Outubro</option>
+					<option value="11">Novembro</option>
+					<option value="12">Dezembro</option>
+				</select>
+			</div>
+			<div class="row">
+				<label>Ano</label>
+				<input type="number" id="ano" placeholder="2026" required min="2000" max="2100" />
+			</div>
+			<div class="actions">
+				<button type="submit" id="add-btn">Adicionar / Atualizar</button>
+				<button type="button" id="clear-btn" class="muted">Limpar tudo</button>
+			</div>
+		</form>
+
+		<section class="card">
+			<h2>Veículos</h2>
+			<div class="actions">
+				<label for="filter-secretaria">Filtrar por Secretaria:</label>
+				<select id="filter-secretaria">
+					<option value="">Todas</option>
+					<option value="Educação">Educação</option>
+					<option value="Saúde">Saúde</option>
+					<option value="Assistência Social">Assistência Social</option>
+					<option value="Administração">Administração</option>
+					<option value="Outros">Outros</option>
+				</select>				<label for="filter-mes">Mês:</label>
+				<select id="filter-mes">
+					<option value="">Todos</option>
+					<option value="01">Janeiro</option>
+					<option value="02">Fevereiro</option>
+					<option value="03">Março</option>
+					<option value="04">Abril</option>
+					<option value="05">Maio</option>
+					<option value="06">Junho</option>
+					<option value="07">Julho</option>
+					<option value="08">Agosto</option>
+					<option value="09">Setembro</option>
+					<option value="10">Outubro</option>
+					<option value="11">Novembro</option>
+					<option value="12">Dezembro</option>
+				</select>
+				<label for="filter-ano">Ano:</label>
+				<input type="number" id="filter-ano" placeholder="Todos" min="2000" max="2100" />				<button type="button" id="download-report-btn">Baixar Relatório de Média</button>
+			</div>
+			<table id="car-list">
+				<thead>
+					<tr>
+						<th>Modelo</th>
+						<th>Placa</th>
+						<th>Quilometragem</th>
+						<th>Secretaria</th>
+						<th>Mês</th>
+						<th>Ano</th>
+						<th>Ações</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</section>
+	</main>
+
+	<script src="main.js"></script>
+</body>
+</html>
