@@ -1,36 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-
-interface IconProps {
-  size?: number;
-  className?: string;
-}
-
-function Trash2({ size = 24, className }: IconProps) {
-  return (
-    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 5v5m4-5v5" />
-    </svg>
-  );
-}
-
-function Download({ size = 24, className }: IconProps) {
-  return (
-    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" />
-    </svg>
-  );
-}
-
-function Search({ size = 24, className }: IconProps) {
-  return (
-    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-  );
-}
+import { Trash2, Download, Search, Lock, User, LogOut } from "lucide-react";
 
 interface Veiculo {
   id: string;
@@ -44,7 +15,13 @@ interface Veiculo {
 }
 
 export default function Home() {
-  // Lista inicial com os dados de exemplo que podem ser removidos
+  // Estado de Autenticação
+  const [autenticado, setAutenticado] = useState(false);
+  const [usuarioInput, setUsuarioInput] = useState("");
+  const [senhaInput, setSenhaInput] = useState("");
+  const [erroAuth, setErroAuth] = useState("");
+
+  // Lista de veículos
   const [veiculos, setVeiculos] = useState<Veiculo[]>([
     {
       id: "1",
@@ -68,16 +45,94 @@ export default function Home() {
     },
   ]);
 
-  // Função para remover um veículo da lista
+  // Função para processar o Login
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usuarioInput === "Mct2026" && senhaInput === "Mct 2026@") {
+      setAutenticado(true);
+      setErroAuth("");
+    } else {
+      setErroAuth("Utilizador ou palavra-passe incorretos.");
+    }
+  };
+
+  const handleLogout = () => {
+    setAutenticado(false);
+    setUsuarioInput("");
+    setSenhaInput("");
+  };
+
   const removerVeiculo = (id: string) => {
     setVeiculos(veiculos.filter((item) => item.id !== id));
   };
 
-  // Cálculos dinâmicos dos cards
   const totalGasto = veiculos.reduce((acc, item) => acc + item.valorTotal, 0);
   const totalLitros = veiculos.reduce((acc, item) => acc + item.litros, 0);
   const totalKmRodados = veiculos.reduce((acc, item) => acc + item.kmRodados, 0);
 
+  // --- TELA DE LOGIN ---
+  if (!autenticado) {
+    return (
+      <div className="min-h-screen bg-[#0b132b] text-white flex items-center justify-center p-4 font-sans">
+        <div className="bg-[#1c2541] p-8 rounded-2xl border border-gray-800 w-full max-w-md shadow-2xl">
+          <div className="text-center mb-6">
+            <div className="bg-blue-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-400">
+              <Lock size={32} />
+            </div>
+            <h1 className="text-2xl font-bold">Acesso ao Sistema</h1>
+            <p className="text-gray-400 text-xs mt-1">Frota & Combustível MCT</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Utilizador</label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 text-gray-500" size={18} />
+                <input
+                  type="text"
+                  placeholder="Introduza o utilizador"
+                  value={usuarioInput}
+                  onChange={(e) => setUsuarioInput(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Palavra-passe</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
+                <input
+                  type="password"
+                  placeholder="Introduza a palavra-passe"
+                  value={senhaInput}
+                  onChange={(e) => setSenhaInput(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+            </div>
+
+            {erroAuth && (
+              <p className="text-red-400 text-xs text-center font-medium bg-red-950/40 py-2 rounded-lg border border-red-900/50">
+                {erroAuth}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-2 text-sm shadow-lg shadow-blue-600/20"
+            >
+              Entrar no Sistema
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // --- DASHBOARD PRINCIPAL (PÓS-LOGIN) ---
   return (
     <div className="min-h-screen bg-[#0b132b] text-white p-6 font-sans">
       <header className="flex justify-between items-center mb-8">
@@ -85,10 +140,20 @@ export default function Home() {
           <h1 className="text-2xl font-bold">Sistema de Frota & Combustível MCT</h1>
           <p className="text-gray-400 text-sm">Consolidação de Quilometragem e Prestação de Contas para o TCE</p>
         </div>
-        <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition">
-          <Download size={18} />
-          Exportar Relatório TCE (.CSV)
-        </button>
+        <div className="flex items-center gap-3">
+          <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm">
+            <Download size={18} />
+            Exportar Relatório TCE (.CSV)
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-900/40 hover:bg-red-800/60 text-red-300 font-medium px-3 py-2 rounded-lg flex items-center gap-1.5 transition text-sm border border-red-800/50"
+            title="Sair do Sistema"
+          >
+            <LogOut size={16} />
+            Sair
+          </button>
+        </div>
       </header>
 
       {/* Cards de Métricas */}
@@ -117,7 +182,6 @@ export default function Home() {
 
       {/* Formulário e Tabela */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulário de Cadastro */}
         <div className="bg-[#1c2541] p-6 rounded-xl border border-gray-800">
           <h2 className="text-lg font-bold mb-4">Lançar Leitura do Painel</h2>
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
@@ -146,7 +210,6 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Tabela com opção de Excluir */}
         <div className="lg:col-span-2 bg-[#1c2541] p-6 rounded-xl border border-gray-800">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold">Consolidação de Veículos (TCE)</h2>
