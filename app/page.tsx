@@ -1,328 +1,228 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import React, { useState } from "react";
 
-// Tipos para o sistema
+interface IconProps {
+  size?: number;
+  className?: string;
+}
+
+function Trash2({ size = 24, className }: IconProps) {
+  return (
+    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m5 5v5m4-5v5" />
+    </svg>
+  );
+}
+
+function Download({ size = 24, className }: IconProps) {
+  return (
+    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" />
+    </svg>
+  );
+}
+
+function Search({ size = 24, className }: IconProps) {
+  return (
+    <svg aria-hidden="true" className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  );
+}
+
 interface Veiculo {
+  id: string;
   placa: string;
   modelo: string;
   secretaria: string;
   kmInicial: number;
-  kmTripPainel: number;
-  litrosAbastecidos: number;
-  valorTotalGasto: number;
+  kmRodados: number;
+  litros: number;
+  valorTotal: number;
 }
 
 export default function Home() {
-  // Lista inicial com o veículo das fotos/planilha como exemplo
+  // Lista inicial com os dados de exemplo que podem ser removidos
   const [veiculos, setVeiculos] = useState<Veiculo[]>([
     {
-      placa: 'RSN4A78',
-      modelo: 'FIAT MOBI LIKE',
-      secretaria: 'SAÚDE',
+      id: "1",
+      placa: "RSN4A78",
+      modelo: "FIAT MOBI LIKE",
+      secretaria: "SAÚDE",
       kmInicial: 155353,
-      kmTripPainel: 2186.8,
-      litrosAbastecidos: 54.0,
-      valorTotalGasto: 281.11,
+      kmRodados: 2186.8,
+      litros: 54.0,
+      valorTotal: 281.11,
     },
     {
-      placa: 'SCR8D25',
-      modelo: 'AMBULÂNCIA MERCEDES',
-      secretaria: 'SAÚDE',
+      id: "2",
+      placa: "SCR8D25",
+      modelo: "AMBULÂNCIA MERCEDES",
+      secretaria: "SAÚDE",
       kmInicial: 186509,
-      kmTripPainel: 7184.0,
-      litrosAbastecidos: 220.0,
-      valorTotalGasto: 1450.00,
+      kmRodados: 7184,
+      litros: 220.0,
+      valorTotal: 1450.0,
     },
   ]);
 
-  // Estados do Formulário
-  const [placa, setPlaca] = useState('');
-  const [modelo, setModelo] = useState('');
-  const [secretaria, setSecretaria] = useState('SAÚDE');
-  const [kmInicial, setKmInicial] = useState('');
-  const [kmTripPainel, setKmTripPainel] = useState('');
-  const [litros, setLitros] = useState('');
-  const [valorGasto, setValorGasto] = useState('');
-  const [busca, setBusca] = useState('');
-
-  // Adicionar novo veículo/lançamento
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!placa || !kmInicial || !kmTripPainel) return;
-
-    const novoVeiculo: Veiculo = {
-      placa: placa.toUpperCase(),
-      modelo: modelo.toUpperCase() || 'VEÍCULO MUNICIPAL',
-      secretaria,
-      kmInicial: Number(kmInicial),
-      kmTripPainel: Number(kmTripPainel),
-      litrosAbastecidos: Number(litros) || 0,
-      valorTotalGasto: Number(valorGasto) || 0,
-    };
-
-    setVeiculos([...veiculos, novoVeiculo]);
-
-    // Limpar formulário
-    setPlaca('');
-    setModelo('');
-    setKmInicial('');
-    setKmTripPainel('');
-    setLitros('');
-    setValorGasto('');
+  // Função para remover um veículo da lista
+  const removerVeiculo = (id: string) => {
+    setVeiculos(veiculos.filter((item) => item.id !== id));
   };
 
-  // Cálculos consolidados da frota
-  const totalGastoFrota = veiculos.reduce((acc, v) => acc + v.valorTotalGasto, 0);
-  const totalLitrosFrota = veiculos.reduce((acc, v) => acc + v.litrosAbastecidos, 0);
-  const totalKmRodadosFrota = veiculos.reduce((acc, v) => acc + v.kmTripPainel, 0);
-
-  // Filtragem na busca
-  const veiculosFiltrados = veiculos.filter(
-    (v) =>
-      v.placa.toLowerCase().includes(busca.toLowerCase()) ||
-      v.secretaria.toLowerCase().includes(busca.toLowerCase()) ||
-      v.modelo.toLowerCase().includes(busca.toLowerCase())
-  );
-
-  // Exportar Tabela para CSV (Padrão TCE)
-  const exportarCSV = () => {
-    const cabecalho = 'PLACA;MODELO;SECRETARIA;KM_INICIAL;KM_FINAL;KM_RODADOS;LITROS;VALOR_GASTO;MEDIA_KM_L\n';
-    const linhas = veiculos
-      .map((v) => {
-        const kmFinal = v.kmInicial + v.kmTripPainel;
-        const media = v.litrosAbastecidos > 0 ? (v.kmTripPainel / v.litrosAbastecidos).toFixed(2) : '0';
-        return `${v.placa};${v.modelo};${v.secretaria};${v.kmInicial};${kmFinal};${v.kmTripPainel};${v.litrosAbastecidos};${v.valorTotalGasto};${media}`;
-      })
-      .join('\n');
-
-    const blob = new Blob([cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `RELATORIO_TCE_COMBUSTIVEL.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Cálculos dinâmicos dos cards
+  const totalGasto = veiculos.reduce((acc, item) => acc + item.valorTotal, 0);
+  const totalLitros = veiculos.reduce((acc, item) => acc + item.litros, 0);
+  const totalKmRodados = veiculos.reduce((acc, item) => acc + item.kmRodados, 0);
 
   return (
-    <main className="min-h-screen bg-gray-900 text-gray-100 p-6 md:p-10 font-sans">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Cabeçalho */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-800 pb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">
-              Sistema de Frota & Combustível MCT
-            </h1>
-            <p className="text-gray-400 mt-1">
-              Consolidação de Quilometragem e Prestação de Contas para o TCE
-            </p>
-          </div>
-          <button
-            onClick={exportarCSV}
-            className="mt-4 md:mt-0 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition duration-200"
-          >
-            📥 Exportar Relatório TCE (.CSV)
-          </button>
-        </header>
+    <div className="min-h-screen bg-[#0b132b] text-white p-6 font-sans">
+      <header className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold">Sistema de Frota & Combustível MCT</h1>
+          <p className="text-gray-400 text-sm">Consolidação de Quilometragem e Prestação de Contas para o TCE</p>
+        </div>
+        <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition">
+          <Download size={18} />
+          Exportar Relatório TCE (.CSV)
+        </button>
+      </header>
 
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gray-800/60 border border-gray-700/50 p-6 rounded-xl">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Gasto no Mês</span>
-            <p className="text-3xl font-extrabold text-emerald-400 mt-2">
-              R$ {totalGastoFrota.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div className="bg-gray-800/60 border border-gray-700/50 p-6 rounded-xl">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Combustível Consumido</span>
-            <p className="text-3xl font-extrabold text-blue-400 mt-2">
-              {totalLitrosFrota.toFixed(1)} <span className="text-xl font-normal text-gray-300">Litros</span>
-            </p>
-          </div>
-          <div className="bg-gray-800/60 border border-gray-700/50 p-6 rounded-xl">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quilometragem Total Rodada</span>
-            <p className="text-3xl font-extrabold text-purple-400 mt-2">
-              {totalKmRodadosFrota.toLocaleString('pt-BR')} <span className="text-xl font-normal text-gray-300">km</span>
-            </p>
-          </div>
+      {/* Cards de Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-[#1c2541] p-5 rounded-xl border border-gray-800">
+          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Gasto no Mês</span>
+          <p className="text-2xl font-bold text-emerald-400 mt-2">
+            R$ {totalGasto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          </p>
         </div>
 
-        {/* Formulário + Tabela */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Form de Lançamento */}
-          <div className="bg-gray-800/80 border border-gray-700 p-6 rounded-xl h-fit">
-            <h2 className="text-xl font-bold text-white mb-4">Lançar Leitura do Painel</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-300 mb-1">Placa do Veículo</label>
-                <input
-                  type="text"
-                  placeholder="EX: RSN4A78"
-                  value={placa}
-                  onChange={(e) => setPlaca(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                  required
-                />
-              </div>
+        <div className="bg-[#1c2541] p-5 rounded-xl border border-gray-800">
+          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Combustível Consumido</span>
+          <p className="text-2xl font-bold text-blue-400 mt-2">
+            {totalLitros.toFixed(1)} <span className="text-base font-normal">Litros</span>
+          </p>
+        </div>
 
-              <div>
-                <label className="block text-xs font-medium text-gray-300 mb-1">Modelo / Veículo</label>
-                <input
-                  type="text"
-                  placeholder="EX: FIAT MOBI LIKE"
-                  value={modelo}
-                  onChange={(e) => setModelo(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-300 mb-1">Secretaria</label>
-                <select
-                  value={secretaria}
-                  onChange={(e) => setSecretaria(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="SAÚDE">SAÚDE</option>
-                  <option value="EDUCAÇÃO">EDUCAÇÃO</option>
-                  <option value="ADMINISTRAÇÃO">ADMINISTRAÇÃO</option>
-                  <option value="OBRAS E INFRAESTRUTURA">OBRAS E INFRAESTRUTURA</option>
-                  <option value="MEIO AMBIENTE">MEIO AMBIENTE</option>
-                  <option value="ESPORTES">ESPORTES</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">KM Inicial (Mês)</label>
-                  <input
-                    type="number"
-                    placeholder="155353"
-                    value={kmInicial}
-                    onChange={(e) => setKmInicial(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">KM Rodados (Painel/Trip)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="2186.8"
-                    value={kmTripPainel}
-                    onChange={(e) => setKmTripPainel(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Preview Automático do KM Final */}
-              {kmInicial && kmTripPainel && (
-                <div className="bg-blue-950/40 border border-blue-800/50 p-3 rounded-lg text-xs text-blue-300">
-                  <p><strong>KM Final Calculado:</strong> {(Number(kmInicial) + Number(kmTripPainel)).toFixed(1)} km</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">Litros Abastecidos</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="54.0"
-                    value={litros}
-                    onChange={(e) => setLitros(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">Valor Total (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="281.11"
-                    value={valorGasto}
-                    onChange={(e) => setValorGasto(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-lg transition duration-200 mt-2"
-              >
-                + Adicionar Lançamento
-              </button>
-            </form>
-          </div>
-
-          {/* Tabela de Resultados */}
-          <div className="lg:col-span-2 bg-gray-800/80 border border-gray-700 p-6 rounded-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2 className="text-xl font-bold text-white">Consolidação de Veículos (TCE)</h2>
-              <input
-                type="text"
-                placeholder="🔍 Buscar por placa, secretaria ou modelo..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-full sm:w-72"
-              />
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-300">
-                <thead className="bg-gray-900/80 text-xs text-gray-400 uppercase tracking-wider border-b border-gray-700">
-                  <tr>
-                    <th className="py-3 px-3">Placa / Modelo</th>
-                    <th className="py-3 px-3">Secretaria</th>
-                    <th className="py-3 px-3">KM Inicial</th>
-                    <th className="py-3 px-3">KM Final</th>
-                    <th className="py-3 px-3">KM Rodados</th>
-                    <th className="py-3 px-3">Abastecimento</th>
-                    <th className="py-3 px-3">Média</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700/50">
-                  {veiculosFiltrados.map((v, idx) => {
-                    const kmFinal = v.kmInicial + v.kmTripPainel;
-                    const media = v.litrosAbastecidos > 0 ? (v.kmTripPainel / v.litrosAbastecidos).toFixed(1) : '0';
-
-                    return (
-                      <tr key={idx} className="hover:bg-gray-700/30 transition">
-                        <td className="py-3 px-3">
-                          <span className="font-bold text-white block">{v.placa}</span>
-                          <span className="text-xs text-gray-400">{v.modelo}</span>
-                        </td>
-                        <td className="py-3 px-3 text-xs">{v.secretaria}</td>
-                        <td className="py-3 px-3">{v.kmInicial.toLocaleString()}</td>
-                        <td className="py-3 px-3 font-semibold text-emerald-400">{kmFinal.toLocaleString()}</td>
-                        <td className="py-3 px-3">{v.kmTripPainel.toLocaleString()} km</td>
-                        <td className="py-3 px-3">
-                          <span className="block font-medium text-white">{v.litrosAbastecidos} L</span>
-                          <span className="text-xs text-gray-400">R$ {v.valorTotalGasto.toFixed(2)}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="inline-block bg-blue-900/50 border border-blue-700/50 text-blue-300 px-2 py-0.5 rounded text-xs font-semibold">
-                            {media} km/L
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
+        <div className="bg-[#1c2541] p-5 rounded-xl border border-gray-800">
+          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Quilometragem Total Rodada</span>
+          <p className="text-2xl font-bold text-purple-400 mt-2">
+            {totalKmRodados.toLocaleString("pt-BR")} <span className="text-base font-normal">km</span>
+          </p>
         </div>
       </div>
-    </main>
+
+      {/* Formulário e Tabela */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Formulário de Cadastro */}
+        <div className="bg-[#1c2541] p-6 rounded-xl border border-gray-800">
+          <h2 className="text-lg font-bold mb-4">Lançar Leitura do Painel</h2>
+          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Placa do Veículo</label>
+              <input type="text" placeholder="EX: RSN4A78" className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm" />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Modelo / Veículo</label>
+              <input type="text" placeholder="EX: FIAT MOBI LIKE" className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm" />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Secretaria</label>
+              <select className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm">
+                <option value="SAÚDE">SAÚDE</option>
+                <option value="EDUCAÇÃO">EDUCAÇÃO</option>
+                <option value="INFRAESTRUTURA">INFRAESTRUTURA</option>
+              </select>
+            </div>
+
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-4">
+              + Adicionar Lançamento
+            </button>
+          </form>
+        </div>
+
+        {/* Tabela com opção de Excluir */}
+        <div className="lg:col-span-2 bg-[#1c2541] p-6 rounded-xl border border-gray-800">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold">Consolidação de Veículos (TCE)</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Buscar por placa, secretaria ou modelo"
+                className="bg-[#0b132b] border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-xs w-64"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#0b132b] text-gray-400 uppercase font-semibold">
+                <tr>
+                  <th className="p-3">Placa / Modelo</th>
+                  <th className="p-3">Secretaria</th>
+                  <th className="p-3">KM Inicial</th>
+                  <th className="p-3">KM Final</th>
+                  <th className="p-3">KM Rodados</th>
+                  <th className="p-3">Abastecimento</th>
+                  <th className="p-3">Média</th>
+                  <th className="p-3 text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {veiculos.map((v) => {
+                  const kmFinal = v.kmInicial + v.kmRodados;
+                  const media = (v.kmRodados / v.litros).toFixed(1);
+
+                  return (
+                    <tr key={v.id} className="hover:bg-[#131c38] transition">
+                      <td className="p-3">
+                        <div className="font-bold text-white">{v.placa}</div>
+                        <div className="text-[10px] text-gray-400">{v.modelo}</div>
+                      </td>
+                      <td className="p-3 text-gray-300">{v.secretaria}</td>
+                      <td className="p-3 text-gray-300">{v.kmInicial.toLocaleString("pt-BR")}</td>
+                      <td className="p-3 font-semibold text-emerald-400">{kmFinal.toLocaleString("pt-BR")}</td>
+                      <td className="p-3 text-gray-300">{v.kmRodados.toLocaleString("pt-BR")} km</td>
+                      <td className="p-3">
+                        <div className="font-bold text-white">{v.litros} L</div>
+                        <div className="text-[10px] text-gray-400">R$ {v.valorTotal.toFixed(2)}</div>
+                      </td>
+                      <td className="p-3">
+                        <span className="bg-blue-900/60 text-blue-300 px-2 py-1 rounded font-semibold text-[11px]">
+                          {media} km/L
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => removerVeiculo(v.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-950/40 p-2 rounded-lg transition"
+                          title="Remover Veículo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {veiculos.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-8 text-center text-gray-400">
+                      Nenhum veículo cadastrado na lista.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
