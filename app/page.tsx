@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Trash2, Download, Search, Lock, User, LogOut } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Trash2, Download, Search, Lock, User, LogOut, Plus } from "lucide-react";
 
 interface Veiculo {
   id: string;
@@ -21,38 +21,71 @@ export default function Home() {
   const [senhaInput, setSenhaInput] = useState("");
   const [erroAuth, setErroAuth] = useState("");
 
-  // Lista de veículos
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([
-    {
-      id: "1",
-      placa: "RSN4A78",
-      modelo: "FIAT MOBI LIKE",
-      secretaria: "SAÚDE",
-      kmInicial: 155353,
-      kmRodados: 2186.8,
-      litros: 54.0,
-      valorTotal: 281.11,
-    },
-    {
-      id: "2",
-      placa: "SCR8D25",
-      modelo: "AMBULÂNCIA MERCEDES",
-      secretaria: "SAÚDE",
-      kmInicial: 186509,
-      kmRodados: 7184,
-      litros: 220.0,
-      valorTotal: 1450.0,
-    },
-  ]);
+  // Estados do Formulário de Lançamento
+  const [placa, setPlaca] = useState("");
+  const [modelo, setModelo] = useState("");
+  const [secretaria, setSecretaria] = useState("SAÚDE");
+  const [kmInicial, setKmInicial] = useState("");
+  const [kmRodados, setKmRodados] = useState("");
+  const [litros, setLitros] = useState("");
+  const [valorTotal, setValorTotal] = useState("");
 
-  // Função para processar o Login
+  // Lista de veículos (inicialmente vazia até carregar do localStorage)
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [carregado, setCarregado] = useState(false);
+
+  // 1. Carregar os dados salvos no localStorage ao iniciar
+  useEffect(() => {
+    const dadosSalvos = localStorage.getItem("mct_frota_veiculos");
+    if (dadosSalvos) {
+      try {
+        setVeiculos(JSON.parse(dadosSalvos));
+      } catch (e) {
+        console.error("Erro ao carregar dados do localStorage", e);
+      }
+    } else {
+      // Exemplo padrão se o localStorage estiver limpo
+      setVeiculos([
+        {
+          id: "1",
+          placa: "RSN4A78",
+          modelo: "FIAT MOBI LIKE",
+          secretaria: "SAÚDE",
+          kmInicial: 155353,
+          kmRodados: 2186.8,
+          litros: 54.0,
+          valorTotal: 281.11,
+        },
+        {
+          id: "2",
+          placa: "SCR8D25",
+          modelo: "AMBULÂNCIA MERCEDES",
+          secretaria: "SAÚDE",
+          kmInicial: 186509,
+          kmRodados: 7184,
+          litros: 220.0,
+          valorTotal: 1450.0,
+        },
+      ]);
+    }
+    setCarregado(true);
+  }, []);
+
+  // 2. Salvar automaticamente no localStorage sempre que 'veiculos' for alterado
+  useEffect(() => {
+    if (carregado) {
+      localStorage.setItem("mct_frota_veiculos", JSON.stringify(veiculos));
+    }
+  }, [veiculos, carregado]);
+
+  // Função de Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (usuarioInput === "Mct2026" && senhaInput === "Mct 2026@") {
       setAutenticado(true);
       setErroAuth("");
     } else {
-      setErroAuth("Utilizador ou palavra-passe incorretos.");
+      setErroAuth("Usuário ou senha incorretos.");
     }
   };
 
@@ -62,10 +95,39 @@ export default function Home() {
     setSenhaInput("");
   };
 
+  // Adicionar novo lançamento
+  const adicionarVeiculo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!placa || !modelo) return;
+
+    const novoVeiculo: Veiculo = {
+      id: Date.now().toString(),
+      placa: placa.toUpperCase(),
+      modelo: modelo.toUpperCase(),
+      secretaria,
+      kmInicial: Number(kmInicial) || 0,
+      kmRodados: Number(kmRodados) || 0,
+      litros: Number(litros) || 0,
+      valorTotal: Number(valorTotal) || 0,
+    };
+
+    setVeiculos([...veiculos, novoVeiculo]);
+
+    // Limpar formulário
+    setPlaca("");
+    setModelo("");
+    setKmInicial("");
+    setKmRodados("");
+    setLitros("");
+    setValorTotal("");
+  };
+
+  // Remover veículo
   const removerVeiculo = (id: string) => {
     setVeiculos(veiculos.filter((item) => item.id !== id));
   };
 
+  // Métricas
   const totalGasto = veiculos.reduce((acc, item) => acc + item.valorTotal, 0);
   const totalLitros = veiculos.reduce((acc, item) => acc + item.litros, 0);
   const totalKmRodados = veiculos.reduce((acc, item) => acc + item.kmRodados, 0);
@@ -85,12 +147,12 @@ export default function Home() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Utilizador</label>
+              <label className="text-xs text-gray-400 block mb-1">Usuário</label>
               <div className="relative">
                 <User className="absolute left-3 top-3 text-gray-500" size={18} />
                 <input
                   type="text"
-                  placeholder="Introduza o utilizador"
+                  placeholder="Informe o usuário"
                   value={usuarioInput}
                   onChange={(e) => setUsuarioInput(e.target.value)}
                   className="w-full bg-[#0b132b] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
@@ -100,12 +162,12 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Palavra-passe</label>
+              <label className="text-xs text-gray-400 block mb-1">Senha</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-gray-500" size={18} />
                 <input
                   type="password"
-                  placeholder="Introduza a palavra-passe"
+                  placeholder="Informe a senha"
                   value={senhaInput}
                   onChange={(e) => setSenhaInput(e.target.value)}
                   className="w-full bg-[#0b132b] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
@@ -132,7 +194,7 @@ export default function Home() {
     );
   }
 
-  // --- DASHBOARD PRINCIPAL (PÓS-LOGIN) ---
+  // --- DASHBOARD PRINCIPAL ---
   return (
     <div className="min-h-screen bg-[#0b132b] text-white p-6 font-sans">
       <header className="flex justify-between items-center mb-8">
@@ -184,28 +246,99 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-[#1c2541] p-6 rounded-xl border border-gray-800">
           <h2 className="text-lg font-bold mb-4">Lançar Leitura do Painel</h2>
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4" onSubmit={adicionarVeiculo}>
             <div>
               <label className="text-xs text-gray-400 block mb-1">Placa do Veículo</label>
-              <input type="text" placeholder="EX: RSN4A78" className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm" />
+              <input
+                type="text"
+                placeholder="EX: RSN4A78"
+                value={placa}
+                onChange={(e) => setPlaca(e.target.value)}
+                className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                required
+              />
             </div>
 
             <div>
               <label className="text-xs text-gray-400 block mb-1">Modelo / Veículo</label>
-              <input type="text" placeholder="EX: FIAT MOBI LIKE" className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm" />
+              <input
+                type="text"
+                placeholder="EX: FIAT MOBI LIKE"
+                value={modelo}
+                onChange={(e) => setModelo(e.target.value)}
+                className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                required
+              />
             </div>
 
             <div>
               <label className="text-xs text-gray-400 block mb-1">Secretaria</label>
-              <select className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm">
+              <select
+                value={secretaria}
+                onChange={(e) => setSecretaria(e.target.value)}
+                className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+              >
                 <option value="SAÚDE">SAÚDE</option>
                 <option value="EDUCAÇÃO">EDUCAÇÃO</option>
                 <option value="INFRAESTRUTURA">INFRAESTRUTURA</option>
               </select>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-4">
-              + Adicionar Lançamento
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">KM Inicial</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={kmInicial}
+                  onChange={(e) => setKmInicial(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">KM Rodados</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={kmRodados}
+                  onChange={(e) => setKmRodados(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Litros</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="0"
+                  value={litros}
+                  onChange={(e) => setLitros(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Valor Total (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={valorTotal}
+                  onChange={(e) => setValorTotal(e.target.value)}
+                  className="w-full bg-[#0b132b] border border-gray-700 rounded-lg p-2.5 text-sm"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-4 flex items-center justify-center gap-2 text-sm"
+            >
+              <Plus size={18} />
+              Adicionar Lançamento
             </button>
           </form>
         </div>
@@ -240,7 +373,7 @@ export default function Home() {
               <tbody className="divide-y divide-gray-800">
                 {veiculos.map((v) => {
                   const kmFinal = v.kmInicial + v.kmRodados;
-                  const media = (v.kmRodados / v.litros).toFixed(1);
+                  const media = v.litros > 0 ? (v.kmRodados / v.litros).toFixed(1) : "0.0";
 
                   return (
                     <tr key={v.id} className="hover:bg-[#131c38] transition">
