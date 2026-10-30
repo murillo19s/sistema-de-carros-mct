@@ -81,7 +81,7 @@ export default function Home() {
   // Função de Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (usuarioInput === "Mct2026" && senhaInput === "Mct 2026@") {
+    if (usuarioInput === "Mct2026" && senhaInput === "Mct2026@") {
       setAutenticado(true);
       setErroAuth("");
     } else {
