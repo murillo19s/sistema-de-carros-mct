@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState, useEffect } from "react";
-import { Trash2, Download, Search, Lock, User, LogOut, Plus } from "lucide-react";
+import { Trash2, Download, Search, Lock, User, LogOut, Plus, Upload, Image as ImageIcon } from "lucide-react";
 
 interface Veiculo {
   id: string;
@@ -12,6 +13,7 @@ interface Veiculo {
   kmRodados: number;
   litros: number;
   valorTotal: number;
+  fotoUrl?: string;
 }
 
 export default function Home() {
@@ -29,54 +31,70 @@ export default function Home() {
   const [kmRodados, setKmRodados] = useState("");
   const [litros, setLitros] = useState("");
   const [valorTotal, setValorTotal] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string>("");
 
-  // Lista de veículos (inicialmente vazia até carregar do localStorage)
-  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
-  const [carregado, setCarregado] = useState(false);
+  // Lista de veículos
+  const [veiculos, setVeiculos] = useState<Veiculo[]>(() => {
+    const veiculosPadrao: Veiculo[] = [
+      {
+        id: "1",
+        placa: "RSN4A78",
+        modelo: "FIAT MOBI LIKE",
+        secretaria: "SAÚDE",
+        kmInicial: 155353,
+        kmRodados: 2186.8,
+        litros: 54.0,
+        valorTotal: 281.11,
+      },
+      {
+        id: "2",
+        placa: "SCR8D25",
+        modelo: "AMBULÂNCIA MERCEDES",
+        secretaria: "SAÚDE",
+        kmInicial: 186509,
+        kmRodados: 7184,
+        litros: 220.0,
+        valorTotal: 1450.0,
+      },
+    ];
 
-  // 1. Carregar os dados salvos no localStorage ao iniciar
-  useEffect(() => {
-    const dadosSalvos = localStorage.getItem("mct_frota_veiculos");
-    if (dadosSalvos) {
-      try {
-        setVeiculos(JSON.parse(dadosSalvos));
-      } catch (e) {
-        console.error("Erro ao carregar dados do localStorage", e);
-      }
-    } else {
-      // Exemplo padrão se o localStorage estiver limpo
-      setVeiculos([
-        {
-          id: "1",
-          placa: "RSN4A78",
-          modelo: "FIAT MOBI LIKE",
-          secretaria: "SAÚDE",
-          kmInicial: 155353,
-          kmRodados: 2186.8,
-          litros: 54.0,
-          valorTotal: 281.11,
-        },
-        {
-          id: "2",
-          placa: "SCR8D25",
-          modelo: "AMBULÂNCIA MERCEDES",
-          secretaria: "SAÚDE",
-          kmInicial: 186509,
-          kmRodados: 7184,
-          litros: 220.0,
-          valorTotal: 1450.0,
-        },
-      ]);
+    if (typeof window === "undefined") {
+      return veiculosPadrao;
     }
-    setCarregado(true);
-  }, []);
 
-  // 2. Salvar automaticamente no localStorage sempre que 'veiculos' for alterado
+    const dadosSalvos = localStorage.getItem("mct_frota_veiculos");
+    if (!dadosSalvos) {
+      return veiculosPadrao;
+    }
+
+    try {
+      const dados = JSON.parse(dadosSalvos);
+      return Array.isArray(dados) ? dados : veiculosPadrao;
+    } catch (e) {
+      console.error("Erro ao carregar dados do localStorage", e);
+      return veiculosPadrao;
+    }
+  });
+  const [filtroBusca, setFiltroBusca] = useState("");
+
+  // 2. Salvar automaticamente no localStorage
   useEffect(() => {
-    if (carregado) {
+    if (typeof window !== "undefined") {
       localStorage.setItem("mct_frota_veiculos", JSON.stringify(veiculos));
     }
-  }, [veiculos, carregado]);
+  }, [veiculos]);
+
+  // Função de Upload da Foto (converte para Base64)
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Função de Login
   const handleLogin = (e: React.FormEvent) => {
@@ -95,6 +113,32 @@ export default function Home() {
     setSenhaInput("");
   };
 
+  // Função para exportar CSV para o TCE
+  const exportarCSV = () => {
+    if (veiculos.length === 0) {
+      alert("Não há dados cadastrados para exportar.");
+      return;
+    }
+
+    const cabecalho = "PLACA;MODELO;SECRETARIA;KM_INICIAL;KM_FINAL;KM_RODADOS;LITROS_ABASTECIDOS;VALOR_TOTAL_RS;MEDIA_KM_L\n";
+    const linhas = veiculos
+      .map((v) => {
+        const kmFinal = v.kmInicial + v.kmRodados;
+        const media = v.litros > 0 ? (v.kmRodados / v.litros).toFixed(2) : "0.00";
+        return `${v.placa};${v.modelo};${v.secretaria};${v.kmInicial};${kmFinal};${v.kmRodados};${v.litros};${v.valorTotal.toFixed(2)};${media}`;
+      })
+      .join("\n");
+
+    const blob = new Blob(["\uFEFF" + cabecalho + linhas], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Relatorio_TCE_Frota_MCT_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Adicionar novo lançamento
   const adicionarVeiculo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +153,7 @@ export default function Home() {
       kmRodados: Number(kmRodados) || 0,
       litros: Number(litros) || 0,
       valorTotal: Number(valorTotal) || 0,
+      fotoUrl: fotoUrl || undefined,
     };
 
     setVeiculos([...veiculos, novoVeiculo]);
@@ -120,12 +165,21 @@ export default function Home() {
     setKmRodados("");
     setLitros("");
     setValorTotal("");
+    setFotoUrl("");
   };
 
   // Remover veículo
   const removerVeiculo = (id: string) => {
     setVeiculos(veiculos.filter((item) => item.id !== id));
   };
+
+  // Filtro de busca na tabela
+  const veiculosFiltrados = veiculos.filter(
+    (v) =>
+      v.placa.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+      v.modelo.toLowerCase().includes(filtroBusca.toLowerCase()) ||
+      v.secretaria.toLowerCase().includes(filtroBusca.toLowerCase())
+  );
 
   // Métricas
   const totalGasto = veiculos.reduce((acc, item) => acc + item.valorTotal, 0);
@@ -203,7 +257,10 @@ export default function Home() {
           <p className="text-gray-400 text-sm">Consolidação de Quilometragem e Prestação de Contas para o TCE</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm">
+          <button
+            onClick={exportarCSV}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition text-sm shadow-lg shadow-emerald-600/20"
+          >
             <Download size={18} />
             Exportar Relatório TCE (.CSV)
           </button>
@@ -281,6 +338,8 @@ export default function Home() {
                 <option value="SAÚDE">SAÚDE</option>
                 <option value="EDUCAÇÃO">EDUCAÇÃO</option>
                 <option value="INFRAESTRUTURA">INFRAESTRUTURA</option>
+                <option value="ADMINISTRAÇÃO (ADM)">ADMINISTRAÇÃO (ADM)</option>
+                <option value="OUTROS">OUTROS</option>
               </select>
             </div>
 
@@ -333,9 +392,38 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Campo de Anexo da Foto do Painel/Placa */}
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Foto do Painel / Placa</label>
+              <div className="relative border border-dashed border-gray-700 hover:border-blue-500 rounded-lg p-3 text-center cursor-pointer bg-[#0b132b] transition">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                />
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                  <Upload size={16} className="text-blue-400" />
+                  <span>{fotoUrl ? "Foto Anexada (Clique p/ alterar)" : "Clique para anexar imagem"}</span>
+                </div>
+              </div>
+              {fotoUrl && (
+                <div className="mt-2 relative w-full h-24 rounded-lg overflow-hidden border border-gray-700">
+                  <Image
+                    src={fotoUrl}
+                    alt="Painel/Placa"
+                    width={400}
+                    height={96}
+                    unoptimized
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-4 flex items-center justify-center gap-2 text-sm"
+              className="w-full bg-blue-600 hover:bg-blue-500 font-medium py-2.5 rounded-lg transition mt-4 flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-600/20"
             >
               <Plus size={18} />
               Adicionar Lançamento
@@ -343,6 +431,7 @@ export default function Home() {
           </form>
         </div>
 
+        {/* Tabela de Resultados */}
         <div className="lg:col-span-2 bg-[#1c2541] p-6 rounded-xl border border-gray-800">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold">Consolidação de Veículos (TCE)</h2>
@@ -351,7 +440,9 @@ export default function Home() {
               <input
                 type="text"
                 placeholder="Buscar por placa, secretaria ou modelo"
-                className="bg-[#0b132b] border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-xs w-64"
+                value={filtroBusca}
+                onChange={(e) => setFiltroBusca(e.target.value)}
+                className="bg-[#0b132b] border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-xs w-64 focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
@@ -360,6 +451,7 @@ export default function Home() {
             <table className="w-full text-left text-xs">
               <thead className="bg-[#0b132b] text-gray-400 uppercase font-semibold">
                 <tr>
+                  <th className="p-3">Foto</th>
                   <th className="p-3">Placa / Modelo</th>
                   <th className="p-3">Secretaria</th>
                   <th className="p-3">KM Inicial</th>
@@ -371,12 +463,30 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {veiculos.map((v) => {
+                {veiculosFiltrados.map((v) => {
                   const kmFinal = v.kmInicial + v.kmRodados;
                   const media = v.litros > 0 ? (v.kmRodados / v.litros).toFixed(1) : "0.0";
 
                   return (
                     <tr key={v.id} className="hover:bg-[#131c38] transition">
+                      <td className="p-3">
+                        {v.fotoUrl ? (
+                          <a href={v.fotoUrl} target="_blank" rel="noopener noreferrer">
+                            <Image
+                              src={v.fotoUrl}
+                              alt="Foto Painel"
+                              width={40}
+                              height={40}
+                              unoptimized
+                              className="w-10 h-10 object-cover rounded-lg border border-gray-700 hover:scale-110 transition"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-10 h-10 bg-[#0b132b] rounded-lg border border-gray-800 flex items-center justify-center text-gray-600">
+                            <ImageIcon size={18} />
+                          </div>
+                        )}
+                      </td>
                       <td className="p-3">
                         <div className="font-bold text-white">{v.placa}</div>
                         <div className="text-[10px] text-gray-400">{v.modelo}</div>
@@ -407,10 +517,10 @@ export default function Home() {
                   );
                 })}
 
-                {veiculos.length === 0 && (
+                {veiculosFiltrados.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-gray-400">
-                      Nenhum veículo cadastrado na lista.
+                    <td colSpan={9} className="p-8 text-center text-gray-400">
+                      Nenhum veículo encontrado.
                     </td>
                   </tr>
                 )}
